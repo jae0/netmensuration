@@ -5,7 +5,7 @@ bottom.contact.linear = function( sm, O, bcmethods, bcp )  {
   res = list( bc0=NA, bc1=NA)
 
   if(0) {
-    load("~/aegis/data/nets/Scanmar/bottom.contact/results/bc.NED2014102.8.rdata")
+    bc = read_write_fast("~/aegis/data/nets/Scanmar/bottom.contact/results/bc.NED2014102.8.rdz")
     sm =data.frame( Z=bc$Z)
     sm$timestamp=bc$timestamp
     sm$ts=bc$ts

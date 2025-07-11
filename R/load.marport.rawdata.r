@@ -1,5 +1,5 @@
 convert.marport.sds_csv2netmind = function( fnroot = NULL, yr, redo.marport_conversion = F ) {
-  fn_marport_proc = file.path(project.datadirectory(),"bio.snowcrab", "data", "marport", paste("marport_proc_", yr, ".RDATA", sep = ""))
+  fn_marport_proc = file.path(project.datadirectory(),"bio.snowcrab", "data", "marport", paste("marport_proc_", yr, ".rdz", sep = ""))
   if(redo.marport_conversion){
   
     con = file(fnroot, "r")
@@ -66,9 +66,10 @@ convert.marport.sds_csv2netmind = function( fnroot = NULL, yr, redo.marport_conv
     marport$lon = (as.numeric(marport$londeg) + as.numeric(marport$lonmin)/60)*-1
     
    
-    save(marport, file =  fn_marport_proc)
+    read_write_fast(marport, file =  fn_marport_proc)
   }
-  load(fn_marport_proc)
+  
+  marport = read_write_fast(fn_marport_proc)
   
   fn_netmind_arc = file.path(project.datadirectory(),"bio.snowcrab", "data", "netmind", "archive", yr)
   if(!dir.exists(fn_netmind_arc)){ 

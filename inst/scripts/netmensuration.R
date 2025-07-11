@@ -30,8 +30,8 @@ str(bc)
 p = aegis.survey::groundfish_parameters()
 datadir = file.path( p$scanmar.dir, "datalogs", "2014" )  # storage location for raw data logs
 
-fn.base = "basedata.rdata"  # storage of outputs
-fn.meta = "metadata.rdata"
+fn.base = "basedata.rdz"  # storage of outputs
+fn.meta = "metadata.rdz"
 
 # names of variables in logs
 varnames = c( "id", "nm_id", "ltspeed", "ctspeed", "wingspread", "doorspread", "clearance", "opening",
@@ -59,6 +59,6 @@ for ( fl in filelist ) {
     metadata = rbind( metadata, stats )
   }
 }
-save(metadata, file=fn.meta, compress=TRUE)
-save(basedata, file=fn.base, compress= TRUE)
+read_write_fast(metadata, file=fn.meta)
+read_write_fast(basedata, file=fn.base )
 
