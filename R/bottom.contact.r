@@ -150,6 +150,7 @@ require(tcltk)
   ## ------------------------------
   ## MAIN NOISE/INTERPOLATION FILTER
   # Some filtering of noise from data and further focus upon area of interest based upon time and depth if possible
+  
   res = NULL
   res = try( bottom.contact.filter.noise ( x=x, good=O$good, bcp=bcp, debug=debugrun ), silent =TRUE )
   if ( "try-error" %in% class(res) || is.null(res$depth.smoothed) ) {
@@ -182,6 +183,8 @@ require(tcltk)
   if (sd(x$depth, na.rm=TRUE) < bcp$eps.depth ) return(NULL)  # not enough variability in data
   if (sd(x$depth.smoothed, na.rm=TRUE) < bcp$eps.depth ) return(NULL)  # not enough variability in data
 
+  
+
   x.timerange = range( x$timestamp[O$good], na.rm=TRUE )
   x.dt = difftime( x.timerange[2], x.timerange[1], units="mins" )
 
@@ -200,32 +203,36 @@ require(tcltk)
   O$variance.method0 = NA
   O$variance.method1 = NA
   O$variance.method.indices = NA
-  res = NULL
-  res = try( bottom.contact.gating.variance ( x, O$good, bcp ), silent =TRUE )
-  if ( ! "try-error" %in% class( res) )  {
-    if ("bc0" %in% names(res)) {
-    if ( all(is.finite( c(res$bc0, res$bc1 )) ) ) {
-      DT = abs( as.numeric( difftime( res$bc0, res$bc1, units="mins" ) ) )
-      if ( length(DT) == 1 ) {
-        if ( is.finite(DT) &&  DT > bcp$tdif.min & DT < bcp$tdif.max ) {
-        O$variance.method0 = res$bc0
-        O$variance.method1 = res$bc1
-        O$variance.method.indices = which( x$timestamp >= res$bc0 &  x$timestamp <= res$bc1 )
-        bad = which( x$timestamp < res$bc0 |  x$timestamp > res$bc1 )
-        if (length( bad) > 0) O$good[ bad ] = FALSE
-        x$depth[ !O$good ] = NA
-      } }
-    }}
-  }
 
-  if(debug.plot) {
-    trange = range( x$ts[O$good], na.rm=TRUE )
-    drange = c( quantile( x$depth, c(0.05, 0.975), na.rm=TRUE) , median( x$depth, na.rm=TRUE ) * 1.05 )
-    plot(depth~ts, x, ylim=c(drange[2],drange[1]), xlim=c(trange[1],trange[2]), pch=20, cex=0.1, col="gray" )
-    mcol = "gray"
-    points( depth~ts, x[ O$variance.method.indices, ], pch=20, col=mcol, cex=0.2)
-  }
+  if (!bcp$skip_computations) {
 
+    res = NULL
+    res = try( bottom.contact.gating.variance ( x, O$good, bcp ), silent =TRUE )
+    if ( ! "try-error" %in% class( res) )  {
+      if ("bc0" %in% names(res)) {
+      if ( all(is.finite( c(res$bc0, res$bc1 )) ) ) {
+        DT = abs( as.numeric( difftime( res$bc0, res$bc1, units="mins" ) ) )
+        if ( length(DT) == 1 ) {
+          if ( is.finite(DT) &&  DT > bcp$tdif.min & DT < bcp$tdif.max ) {
+          O$variance.method0 = res$bc0
+          O$variance.method1 = res$bc1
+          O$variance.method.indices = which( x$timestamp >= res$bc0 &  x$timestamp <= res$bc1 )
+          bad = which( x$timestamp < res$bc0 |  x$timestamp > res$bc1 )
+          if (length( bad) > 0) O$good[ bad ] = FALSE
+          x$depth[ !O$good ] = NA
+        } }
+      }}
+    }
+
+    if(debug.plot) {
+      trange = range( x$ts[O$good], na.rm=TRUE )
+      drange = c( quantile( x$depth, c(0.05, 0.975), na.rm=TRUE) , median( x$depth, na.rm=TRUE ) * 1.05 )
+      plot(depth~ts, x, ylim=c(drange[2],drange[1]), xlim=c(trange[1],trange[2]), pch=20, cex=0.1, col="gray" )
+      mcol = "gray"
+      points( depth~ts, x[ O$variance.method.indices, ], pch=20, col=mcol, cex=0.2)
+    }
+
+  }
 
   ## NOTE::: From this point on, O$good is now complete
   ## -- it contains indices of time and depth-based gating as well as the variance based gating
@@ -248,30 +255,35 @@ require(tcltk)
   O$modal.method.indices = NA
 
   sm0 = x[ O$aoi, c("depth.smoothed", "timestamp", "ts" ) ]  # send filtered data ... continuity not important .. order is important
-  res = NULL
-  res = try( bottom.contact.modal( sm=sm0, bcp ), silent=TRUE )
-    if ( ! "try-error" %in% class( res) ) {
-      if ("bc0" %in% names(res)) {
-      if ( all(is.finite( c(res$bc0, res$bc1 )) ) ) {
-        DT =  abs( as.numeric( difftime( res$bc0, res$bc1, units="mins" ) ) )
-        if ( length(DT) == 1 ) {
-          if ( is.finite(DT) &&  DT > bcp$tdif.min & DT < bcp$tdif.max ) {
-          O$modal.method0 = res$bc0 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
-          O$modal.method1 = res$bc1 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
-          O$modal.method.indices = which( x$timestamp >= res$bc0  &  x$timestamp <= res$bc1  ) # x correct
-        } }
-      }}
+
+  if (!bcp$skip_computations) {
+    
+    res = NULL
+    res = try( bottom.contact.modal( sm=sm0, bcp ), silent=TRUE )
+      if ( ! "try-error" %in% class( res) ) {
+        if ("bc0" %in% names(res)) {
+        if ( all(is.finite( c(res$bc0, res$bc1 )) ) ) {
+          DT =  abs( as.numeric( difftime( res$bc0, res$bc1, units="mins" ) ) )
+          if ( length(DT) == 1 ) {
+            if ( is.finite(DT) &&  DT > bcp$tdif.min & DT < bcp$tdif.max ) {
+            O$modal.method0 = res$bc0 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
+            O$modal.method1 = res$bc1 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
+            O$modal.method.indices = which( x$timestamp >= res$bc0  &  x$timestamp <= res$bc1  ) # x correct
+          } }
+        }}
+      }
+
+    
+    if(debug.plot) {
+      trange = range( x$ts[O$good], na.rm=TRUE )
+      drange = c( quantile( x$depth, c(0.05, 0.975), na.rm=TRUE) , median( x$depth, na.rm=TRUE ) * 1.05 )
+      #BC - Plots fail in RStudio graphics device, add clause
+      dev.new(noRStudioGD = TRUE)
+      plot(depth~ts, x, ylim=c(drange[2],drange[1]), xlim=c(trange[1],trange[2]), pch=20, cex=0.1, col="gray" )
+      mcol = "green"
+      points( depth~ts, x[ O$modal.method.indices, ], pch=20, col=mcol, cex=0.2)
     }
 
-  
-  if(debug.plot) {
-    trange = range( x$ts[O$good], na.rm=TRUE )
-    drange = c( quantile( x$depth, c(0.05, 0.975), na.rm=TRUE) , median( x$depth, na.rm=TRUE ) * 1.05 )
-    #BC - Plots fail in RStudio graphics device, add clause
-    dev.new(noRStudioGD = TRUE)
-    plot(depth~ts, x, ylim=c(drange[2],drange[1]), xlim=c(trange[1],trange[2]), pch=20, cex=0.1, col="gray" )
-    mcol = "green"
-    points( depth~ts, x[ O$modal.method.indices, ], pch=20, col=mcol, cex=0.2)
   }
 
 
@@ -285,32 +297,35 @@ require(tcltk)
   O$smooth.method.indices = NA
   sm0 = x[ O$aoi, c("depth.smoothed", "timestamp", "ts")]  # Send all data within the aoi --- check this .. order is important
 
-  res = NULL
-  res = try(
-    bottom.contact.smooth( sm=sm0, bcp=bcp ) , silent =TRUE)
-    if ( ! "try-error" %in% class( res) ) {
-      if ("bc0" %in% names(res)) {
-      if ( all(is.finite( c(res$bc0, res$bc1 )) ) ) {
-        DT =  abs( as.numeric( difftime( res$bc0, res$bc1, units="mins" ) ) )
-        if ( length(DT) == 1) {
-          if ( is.finite(DT) &&  DT > bcp$tdif.min & DT < bcp$tdif.max ) {
-          O$smooth.method0 = res$bc0 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
-          O$smooth.method1 = res$bc1 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
-          O$smooth.method.indices = which( x$timestamp >= res$bc0 &  x$timestamp <= res$bc1 ) # x correct
-        } }
-      }}
+  if (!bcp$skip_computations) {
+
+    res = NULL
+    res = try(
+      bottom.contact.smooth( sm=sm0, bcp=bcp ) , silent =TRUE)
+      if ( ! "try-error" %in% class( res) ) {
+        if ("bc0" %in% names(res)) {
+        if ( all(is.finite( c(res$bc0, res$bc1 )) ) ) {
+          DT =  abs( as.numeric( difftime( res$bc0, res$bc1, units="mins" ) ) )
+          if ( length(DT) == 1) {
+            if ( is.finite(DT) &&  DT > bcp$tdif.min & DT < bcp$tdif.max ) {
+            O$smooth.method0 = res$bc0 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
+            O$smooth.method1 = res$bc1 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
+            O$smooth.method.indices = which( x$timestamp >= res$bc0 &  x$timestamp <= res$bc1 ) # x correct
+          } }
+        }}
+      }
+
+    if(debug.plot) {
+      trange = range( x$ts[O$good], na.rm=TRUE )
+      drange = c( quantile( x$depth, c(0.05, 0.975), na.rm=TRUE) , median( x$depth, na.rm=TRUE ) * 1.05 )
+      #BC - Plots fail in RStudio graphics device, add clause
+      dev.new(noRStudioGD = TRUE)
+      plot(depth~ts, x, ylim=c(drange[2],drange[1]), xlim=c(trange[1],trange[2]), pch=20, cex=0.1, col="gray" )
+      mcol = "blue"
+      points( depth~ts, x[ O$smooth.method.indices, ], pch=20, col=mcol, cex=0.2)
     }
 
-  if(debug.plot) {
-    trange = range( x$ts[O$good], na.rm=TRUE )
-    drange = c( quantile( x$depth, c(0.05, 0.975), na.rm=TRUE) , median( x$depth, na.rm=TRUE ) * 1.05 )
-    #BC - Plots fail in RStudio graphics device, add clause
-    dev.new(noRStudioGD = TRUE)
-    plot(depth~ts, x, ylim=c(drange[2],drange[1]), xlim=c(trange[1],trange[2]), pch=20, cex=0.1, col="gray" )
-    mcol = "blue"
-    points( depth~ts, x[ O$smooth.method.indices, ], pch=20, col=mcol, cex=0.2)
   }
-
 
   ## ----------------------------
   ## maxdepth method: looking for the max depth near the areas of interest (left, right)
@@ -321,33 +336,36 @@ require(tcltk)
   sm0$depth[ !O$good ] = NA
   sm0 = sm0[ O$aoi, ]
 
+  if (!bcp$skip_computations) {
 
-  bcmethods=c( "smooth.method", "modal.method" )
-  res = NULL
-  res = try( bottom.contact.maxdepth( sm=sm0, O=O, bcmethods=bcmethods, bcp=bcp ) , silent=TRUE )
-  if ( ! "try-error" %in% class( res) ) {
-    if ("bc0" %in% names(res)) {
+    bcmethods=c( "smooth.method", "modal.method" )
+    res = NULL
+    res = try( bottom.contact.maxdepth( sm=sm0, O=O, bcmethods=bcmethods, bcp=bcp ) , silent=TRUE )
+    if ( ! "try-error" %in% class( res) ) {
+      if ("bc0" %in% names(res)) {
 
-      if(length(res$bc1)>0 && length(res$bc0)>0){
-    if ( all(is.finite( c(res$bc0, res$bc1 )) ) ) {
-      DT =  abs( as.numeric( difftime( res$bc0, res$bc1, units="mins" ) ) )
-      if ( length(DT) == 1 ) {
-        if ( is.finite(DT) && DT > bcp$tdif.min & DT < bcp$tdif.max ) {
-        O$maxdepth.method0 = res$bc0 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
-        O$maxdepth.method1 = res$bc1 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
-        O$maxdepth.method.indices = which( x$timestamp >= res$bc0 &  x$timestamp <= res$bc1 ) # x correct
-      }}
-    }}}
-  }
+        if(length(res$bc1)>0 && length(res$bc0)>0){
+      if ( all(is.finite( c(res$bc0, res$bc1 )) ) ) {
+        DT =  abs( as.numeric( difftime( res$bc0, res$bc1, units="mins" ) ) )
+        if ( length(DT) == 1 ) {
+          if ( is.finite(DT) && DT > bcp$tdif.min & DT < bcp$tdif.max ) {
+          O$maxdepth.method0 = res$bc0 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
+          O$maxdepth.method1 = res$bc1 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
+          O$maxdepth.method.indices = which( x$timestamp >= res$bc0 &  x$timestamp <= res$bc1 ) # x correct
+        }}
+      }}}
+    }
 
-  if(debug.plot) {
-    trange = range( x$ts[O$good], na.rm=TRUE )
-    drange = c( quantile( x$depth, c(0.05, 0.975), na.rm=TRUE) , median( x$depth, na.rm=TRUE ) * 1.05 )
-    #BC - Plots fail in RStudio graphics device, add clause
-    dev.new(noRStudioGD = TRUE)
-    plot(depth~ts, x, ylim=c(drange[2],drange[1]), xlim=c(trange[1],trange[2]), pch=20, cex=0.1, col="gray" )
-    mcol = "yellow"
-    points( depth~ts, x[ O$maxdepth.method.indices, ], pch=20, col=mcol, cex=0.2)
+    if(debug.plot) {
+      trange = range( x$ts[O$good], na.rm=TRUE )
+      drange = c( quantile( x$depth, c(0.05, 0.975), na.rm=TRUE) , median( x$depth, na.rm=TRUE ) * 1.05 )
+      #BC - Plots fail in RStudio graphics device, add clause
+      dev.new(noRStudioGD = TRUE)
+      plot(depth~ts, x, ylim=c(drange[2],drange[1]), xlim=c(trange[1],trange[2]), pch=20, cex=0.1, col="gray" )
+      mcol = "yellow"
+      points( depth~ts, x[ O$maxdepth.method.indices, ], pch=20, col=mcol, cex=0.2)
+    }
+
   }
 
 
@@ -362,33 +380,38 @@ require(tcltk)
   sm0$depth[ !O$good ] = NA
   sm0 = sm0[ O$aoi, ]
 
-  bcmethods=c( "smooth.method", "modal.method", "linear.method" )
+  if (!bcp$skip_computations) {
 
-  res = NULL
-  res = try( bottom.contact.linear( sm=sm0, O=O, bcmethods=bcmethods, bcp=bcp ) , silent=TRUE )
-  if ( ! "try-error" %in% class( res) ) {
-     if ("bc0" %in% names(res)) {
-    if ( all(is.finite( c(res$bc0, res$bc1 )) ) ) {
-      DT =  abs( as.numeric( difftime( res$bc0, res$bc1, units="mins" ) ) )
-      if (  length(DT) == 1) {
-          if ( is.finite(DT) && DT > bcp$tdif.min & DT < bcp$tdif.max ) {
-        O$linear.method0 = res$bc0 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
-        O$linear.method1 = res$bc1 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
-        O$linear.method.indices = which( x$timestamp >= res$bc0 &  x$timestamp <= res$bc1 ) # x correct
-      } }
-    }}
+    bcmethods=c( "smooth.method", "modal.method", "linear.method" )
+
+    res = NULL
+    res = try( bottom.contact.linear( sm=sm0, O=O, bcmethods=bcmethods, bcp=bcp ) , silent=TRUE )
+    if ( ! "try-error" %in% class( res) ) {
+      if ("bc0" %in% names(res)) {
+      if ( all(is.finite( c(res$bc0, res$bc1 )) ) ) {
+        DT =  abs( as.numeric( difftime( res$bc0, res$bc1, units="mins" ) ) )
+        if (  length(DT) == 1) {
+            if ( is.finite(DT) && DT > bcp$tdif.min & DT < bcp$tdif.max ) {
+          O$linear.method0 = res$bc0 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
+          O$linear.method1 = res$bc1 #### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
+          O$linear.method.indices = which( x$timestamp >= res$bc0 &  x$timestamp <= res$bc1 ) # x correct
+        } }
+      }}
+    }
+
+
+    if(debug.plot) {
+      trange = range( x$ts[O$good], na.rm=TRUE )
+      drange = c( quantile( x$depth, c(0.05, 0.975), na.rm=TRUE) , median( x$depth, na.rm=TRUE ) * 1.05 )
+      #BC - Plots fail in RStudio graphics device, add clause
+      dev.new(noRStudioGD = TRUE)
+      plot(depth~ts, x, ylim=c(drange[2],drange[1]), xlim=c(trange[1],trange[2]), pch=20, cex=0.1, col="gray" )
+      mcol = "red"
+      points( depth~ts, x[ O$linear.method.indices, ], pch=20, col=mcol, cex=0.2)
+    }
+
   }
 
-
-  if(debug.plot) {
-    trange = range( x$ts[O$good], na.rm=TRUE )
-    drange = c( quantile( x$depth, c(0.05, 0.975), na.rm=TRUE) , median( x$depth, na.rm=TRUE ) * 1.05 )
-    #BC - Plots fail in RStudio graphics device, add clause
-    dev.new(noRStudioGD = TRUE)
-    plot(depth~ts, x, ylim=c(drange[2],drange[1]), xlim=c(trange[1],trange[2]), pch=20, cex=0.1, col="gray" )
-    mcol = "red"
-    points( depth~ts, x[ O$linear.method.indices, ], pch=20, col=mcol, cex=0.2)
-  }
 
 
   ## ---------------------------
