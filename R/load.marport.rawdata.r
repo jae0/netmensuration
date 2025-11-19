@@ -77,7 +77,7 @@ convert.marport.sds_csv2netmind = function( fnroot = NULL, yr, redo.marport_conv
   fl = list.files(fn_netmind_arc)
   set = snowcrab.db( DS="setInitial" ) 
   set = set[which(set$yr == yr),]
-  
+
   set$station[which(nchar(set$station) == 1)] = paste("00", set$station[which(nchar(set$station) == 1)], sep = "")
   set$station[which(nchar(set$station) == 2)] = paste("0", set$station[which(nchar(set$station) == 2)], sep = "")
   missing.set = set[which(!paste("ep", set$station, ".txt", sep = "") %in% fl),]
@@ -86,6 +86,7 @@ convert.marport.sds_csv2netmind = function( fnroot = NULL, yr, redo.marport_conv
   
   for(i in 1:nrow(missing.set)){
     curset = missing.set[i,]
+    print(curset)
      if(curset$trip == "S06102021" && curset$station == "130") curset$station = "305"
     sind = which(geosphere::distm(c(curset$lon, curset$lat),cbind(marport$lon, marport$lat), fun = distHaversine) < 2000)
     if(length(sind) == 0){

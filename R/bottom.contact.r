@@ -18,7 +18,6 @@ require(tcltk)
   debug.plot = FALSE
   n.min.required = 30
   nx = nrow(x)
-
   O = list()  # output list
   O$id = bcp$id
   O$error.flag = NA
@@ -397,7 +396,6 @@ require(tcltk)
   O$manual.method1 = NA  ### NOTE:: using the 'c' operator on posix strips out the timezone info! this must be retained
 
   if ( bcp$user.interaction  ) {
-
     satisified = F
     while(!satisified){
 
@@ -413,7 +411,7 @@ require(tcltk)
     if("wingspread" %in% names(O$plotdata)){
     #Plot the door spread
     ylim=c(min(O$plotdata$wingspread[grange], na.rm = TRUE)-1,max(O$plotdata$wingspread[grange], na.rm = TRUE)+1)
-    if(is.finite(ylim)){
+    if(all(is.finite(ylim))){
     plot(O$plotdata$timestamp[grange][which(!is.na(O$plotdata$wingspread[grange]))], O$plotdata$wingspread[grange][which(!is.na(O$plotdata$wingspread[grange]))], axes=F, ylim=ylim, xlab="", ylab="",type="p",col="#0000FF1A", main="",xlim=c(min(O$plotdata$timestamp[grange]), max(O$plotdata$timestamp[grange])))
       if(length(unique(na.omit(O$plotdata$wingspread[grange]))) > 5 ){
        smoothingSpline = smooth.spline(O$plotdata$timestamp[grange][which(!is.na(O$plotdata$wingspread[grange]))], O$plotdata$wingspread[grange][which(!is.na(O$plotdata$wingspread[grange]))], spar=.5)
@@ -467,9 +465,9 @@ require(tcltk)
     for(k in 1:(length(O$plotdata$latitude[grange])-1)){
       p1 = c(O$plotdata$longitude[grange][1],O$plotdata$latitude[grange][1])
       p2 = c(O$plotdata$longitude[grange][k+1],O$plotdata$latitude[grange][k+1])
-      if(!is.null(p1) & !is.null(p2)){
-      if(!is.na(p1) & !is.na(p2))
-           {
+
+       if(!is.null(p1) & !is.null(p2)){
+      if(all(!is.na(p1) & !is.na(p2))){
              disfromorigin[k+1] = geosphere::distHaversine(p1 , p2, r=6378137)
     }
     }
