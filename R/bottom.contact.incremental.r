@@ -5,7 +5,7 @@ bottom.contact.incremental = function( sm, bcp=bcp )  {
  stop( "Not working well enough for full time use")
 
   if(0) {
-    bc = read_write_fast("~/aegis/data/nets/Scanmar/bottom.contact/results/bc.NED2014102.8.rdz")
+    bc = read_write_fast("~/aegis/data/nets/Scanmar/bottom.contact/results/bc.NED2014102.8.rds")
     sm =data.frame( Z=bc$Z)
     sm$timestamp=bc$timestamp
     sm$ts=bc$ts

@@ -1,5 +1,5 @@
 convert.marport.sds_csv2netmind = function( fnroot = NULL, yr, redo.marport_conversion = F ) {
-  fn_marport_proc = file.path(project.datadirectory(),"bio.snowcrab", "data", "marport", paste("marport_proc_", yr, ".rdz", sep = ""))
+  fn_marport_proc = file.path(project.datadirectory(),"bio.snowcrab", "data", "marport", paste("marport_proc_", yr, ".rds", sep = ""))
   if(redo.marport_conversion){
   
     con = file(fnroot, "r")
